@@ -2,6 +2,7 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
+#define ARRSIZE(x) (sizeof(x) / sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(GDK_MOD2_MASK))
 
 typedef struct {
@@ -29,6 +30,8 @@ typedef struct {
 /* functions */
 static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
+static void dummy(FmWindow *fw, const Arg *arg);
+static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void newwin(FmWindow *fw, const Arg *arg);
 
 /* variables */
@@ -69,6 +72,8 @@ createwin()
 	/* connect signals */
 	g_signal_connect(G_OBJECT(fw->win), "destroy", 
 			G_CALLBACK(destroywin), fw);
+	g_signal_connect(G_OBJECT(fw->win), "key-press-event",
+			G_CALLBACK(keypress), fw);
 
 	/* add widgets */
 	gtk_container_add(GTK_CONTAINER(fw->scroll), fw->tree);
@@ -94,6 +99,29 @@ destroywin(GtkWidget *w, FmWindow *fw)
 		g_free(fw->path);
 
 	g_free(fw);
+}
+
+void
+dummy(FmWindow *fw, const Arg *arg)
+{
+	g_print("dummy!\n");
+}
+
+/* handles key events on the FmWindow */
+gboolean
+keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw)
+{
+	gint i;
+
+	for (i = 0; i < ARRSIZE(keys); i++) {
+		if (gdk_keyval_to_lower(ev->keyval) == keys[i].key &&
+				CLEANMASK(ev->state) == keys[i].mod &&
+				keys[i].func) {
+			keys[i].func(fw, &keys[i].arg);
+		}
+	}
+
+	return FALSE;
 }
 
 /* creates and inserts a new FmWindow to the window list */

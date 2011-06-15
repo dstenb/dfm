@@ -1,4 +1,8 @@
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
@@ -33,6 +37,9 @@ static void destroywin(GtkWidget *w, FmWindow *fw);
 static void dummy(FmWindow *fw, const Arg *arg);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void newwin(FmWindow *fw, const Arg *arg);
+static void open_directory(FmWindow *fw, const Arg *arg);
+static void read_files(FmWindow *fw, DIR *dir);
+static int valid_filename(const char *s, int show_dot);
 
 /* variables */
 static GList *windows = NULL;
@@ -50,6 +57,7 @@ createwin()
 
 	fw = g_malloc(sizeof(FmWindow));
 	fw->path = NULL;
+	fw->show_dot = FALSE; /* TODO set */
 	fw->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_default_size(GTK_WINDOW(fw->win), 640, 480);
 
@@ -132,6 +140,75 @@ newwin(FmWindow *fw, const Arg *arg)
 	windows = g_list_append(windows, new);
 }
 
+void
+open_directory(FmWindow *fw, const Arg *arg)
+{
+	DIR *dir;
+	char rpath[PATH_MAX];
+
+	if (!arg->v)
+		return;
+
+	/* change to current working directory to get relative paths right */
+	if (fw->path)
+		chdir(fw->path);
+
+	/* get clean absolute path string */
+	realpath((char*)arg->v, rpath);
+
+	if (!(dir = opendir(rpath))) {
+		/* TODO handle errors */
+		g_warning("%s: %s\n", rpath, g_strerror(errno));
+		return;
+	}
+
+	if (fw->path)
+		g_free(fw->path);
+
+	fw->path = g_strdup(rpath);
+	chdir(fw->path);
+	/* fw->mtime = mtime(fw->path); */
+
+	read_files(fw, dir);
+
+	closedir(dir);
+}
+
+/* reads files in to fw's list store from an opened DIR struct */
+void
+read_files(FmWindow *fw, DIR *dir)
+{
+	struct dirent *e;
+	struct stat st;
+
+	GtkListStore *store = GTK_LIST_STORE(
+			gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree)));
+	GtkTreeIter iter;
+
+	/* remove previous entries */
+	gtk_list_store_clear(store);
+
+	while ((e = readdir(dir))) {
+
+		if (valid_filename(e->d_name, fw->show_dot)
+				&& (stat(e->d_name, &st) == 0)) {
+			gtk_list_store_append(store, &iter);
+			gtk_list_store_set(store, &iter,
+					0, e->d_name,
+					-1);
+		}
+	}
+}
+
+/* returns 1 if valid filename, i.e. not '.' or '..' (or .* if show_dot = 0) */
+int
+valid_filename(const char *s, int show_dot)
+{
+	return show_dot ? 
+		(strcmp(s, ".") != 0 && strcmp(s, "..") != 0) :
+		*s != '.';
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -150,8 +227,6 @@ main(int argc, char *argv[])
 
 	gtk_init(&argc, &argv);
 
-	newwin(NULL, &arg);
-	newwin(NULL, &arg);
 	newwin(NULL, &arg);
 
 	gtk_main();

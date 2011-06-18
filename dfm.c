@@ -46,7 +46,6 @@ typedef struct {
 static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
 static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
-static void dummy(FmWindow *fw, const Arg *arg);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
@@ -169,12 +168,6 @@ destroywin(GtkWidget *w, FmWindow *fw)
 		g_free(fw->path);
 
 	g_free(fw);
-}
-
-void
-dummy(FmWindow *fw, const Arg *arg)
-{
-	g_print("dummy!\n");
 }
 
 /* handles key events on the FmWindow */

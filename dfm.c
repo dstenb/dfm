@@ -42,6 +42,7 @@ typedef struct {
 } Key;
 
 /* functions */
+static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
 static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
 static void dummy(FmWindow *fw, const Arg *arg);
@@ -57,6 +58,26 @@ static const char* permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-"
 static GList *windows = NULL;
 
 #include "config.h"
+
+/* enters the selected item if directory, otherwise 
+ * executes program with the file as argument */
+void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
+{
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree));
+	GtkTreeIter iter;
+	gchar* name;
+	gchar fpath[PATH_MAX];
+
+	gtk_tree_model_get_iter(model, &iter, p);
+	gtk_tree_model_get(model, &iter, 
+			NAME_STR, &name,
+			-1);
+
+	chdir(fw->path);
+	realpath(name, fpath);
+
+	g_print("action(%s)\n", fpath);
+}
 
 /* creates and initializes a FmWindow */
 FmWindow*
@@ -102,7 +123,7 @@ createwin()
 
 	/* expand first column */
 	gtk_tree_view_column_set_expand(
-			gtk_tree_view_get_column(GTK_TREE_VIEW(fw->tree), 0),
+			gtk_tree_view_get_column(GTK_TREE_VIEW(fw->tree), 0), 
 			TRUE); 
 
 	/* connect signals */
@@ -110,6 +131,8 @@ createwin()
 			G_CALLBACK(destroywin), fw);
 	g_signal_connect(G_OBJECT(fw->win), "key-press-event",
 			G_CALLBACK(keypress), fw);
+	g_signal_connect(G_OBJECT(fw->tree), "row-activated", 
+			G_CALLBACK(action), fw);
 
 	/* add widgets */
 	gtk_container_add(GTK_CONTAINER(fw->scroll), fw->tree);

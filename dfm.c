@@ -46,6 +46,7 @@ typedef struct {
 static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
 static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
+static void dir_exec(FmWindow *fw, const Arg *arg);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
@@ -54,7 +55,9 @@ static int valid_filename(const char *s, int show_dot);
 
 static const char* permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
 
+
 /* variables */
+static int show_dotfiles = 0;
 static GList *windows = NULL;
 
 #include "config.h"
@@ -100,7 +103,7 @@ createwin()
 
 	fw = g_malloc(sizeof(FmWindow));
 	fw->path = NULL;
-	fw->show_dot = FALSE; /* TODO set */
+	fw->show_dot = show_dotfiles;
 	fw->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_default_size(GTK_WINDOW(fw->win), 640, 480);
 
@@ -312,6 +315,9 @@ main(int argc, char *argv[])
 	/* read arguments */
 	for(i = 1; i < argc && argv[i][0] == '-'; i++) {
 		switch(argv[i][1]) {
+			case 'd':
+				show_dotfiles = 1;
+				break;
 			default:
 				g_printerr("Usage: %s [OPTS]... [PATH]\n", argv[0]);
 				exit(EXIT_FAILURE);

@@ -9,6 +9,16 @@
 #define ARRSIZE(x) (sizeof(x) / sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(GDK_MOD2_MASK))
 
+enum ListColumns {
+	NAME_STR,
+	PERMS_STR,
+	SIZE_STR,
+	MTIME_STR,
+	PERMS,
+	MTIME,
+	SIZE
+};
+
 typedef struct {
 	GtkWidget *win;
 	GtkWidget *scroll;
@@ -41,6 +51,8 @@ static void open_directory(FmWindow *fw, const Arg *arg);
 static void read_files(FmWindow *fw, DIR *dir);
 static int valid_filename(const char *s, int show_dot);
 
+static const char* permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
+
 /* variables */
 static GList *windows = NULL;
 
@@ -67,7 +79,9 @@ createwin()
 			GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
 
 	/* setup list store */
-	store = gtk_list_store_new(1, G_TYPE_STRING); /* TODO columns */
+	store = gtk_list_store_new(7, G_TYPE_STRING, G_TYPE_STRING,
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,
+			G_TYPE_INT, G_TYPE_INT);
 
 	/* setup tree view */
 	fw->tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
@@ -75,7 +89,20 @@ createwin()
 
 	rend = gtk_cell_renderer_text_new();
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(fw->tree),
-			-1, "Name", rend, "text", 0, NULL);
+			-1, "Name", rend, "text", NAME_STR, NULL);
+	rend = gtk_cell_renderer_text_new();
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(fw->tree),
+			-1, "Permissions", rend, "text", PERMS_STR, NULL);
+	rend = gtk_cell_renderer_text_new();
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(fw->tree),
+			-1, "Size", rend, "text", SIZE_STR, NULL);
+	rend = gtk_cell_renderer_text_new();
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(fw->tree),
+			-1, "Modified", rend, "text", MTIME_STR, NULL);
+
+
+
+
 
 	/* connect signals */
 	g_signal_connect(G_OBJECT(fw->win), "destroy", 
@@ -137,6 +164,7 @@ void
 newwin(FmWindow *fw, const Arg *arg)
 {
 	FmWindow *new = createwin();
+	open_directory(new, arg);
 	windows = g_list_append(windows, new);
 }
 
@@ -180,6 +208,10 @@ read_files(FmWindow *fw, DIR *dir)
 {
 	struct dirent *e;
 	struct stat st;
+	struct tm *time;
+	char mtime_str[20];
+	char perms_str[20];
+	char size_str[20];
 
 	GtkListStore *store = GTK_LIST_STORE(
 			gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree)));
@@ -192,9 +224,42 @@ read_files(FmWindow *fw, DIR *dir)
 
 		if (valid_filename(e->d_name, fw->show_dot)
 				&& (stat(e->d_name, &st) == 0)) {
+
+			/*** TODO cleanup and split ***/
+
+			/* set time string */
+			time = localtime(&st.st_mtime);
+			strftime(mtime_str, sizeof(mtime_str), "%Y-%m-%d %H:%M:%S", time);
+
+			/* set permission string */
+			snprintf(perms_str, sizeof(perms_str), "%s%s%s",
+					permstr[(st.st_mode >> 6) & 7],
+					permstr[(st.st_mode >> 3) & 7],
+					permstr[st.st_mode & 7]);
+
+			/* set size string */
+			if (st.st_size < 1024) {
+				snprintf(size_str, sizeof(size_str), "%i B", (int)st.st_size);
+			} else if (st.st_size < 1024*1024) {
+				snprintf(size_str, sizeof(size_str), "%.1f kB", 
+						st.st_size / 1024.0);
+			} else if (st.st_size < 1024*1024*1024) {
+				snprintf(size_str, sizeof(size_str), "%.1f MB", 
+						st.st_size / (1024.0*1024));
+			} else {
+				snprintf(size_str, sizeof(size_str), "%.1f GB",
+						st.st_size / (1024.0*1024*1024));
+			}
+
 			gtk_list_store_append(store, &iter);
 			gtk_list_store_set(store, &iter,
-					0, e->d_name,
+					NAME_STR, e->d_name,
+					PERMS_STR, perms_str,
+					SIZE_STR, size_str,
+					MTIME_STR, mtime_str,
+					PERMS, st.st_mode,
+					MTIME, st.st_mtime,
+					SIZE, st.st_size,
 					-1);
 		}
 	}

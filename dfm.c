@@ -16,7 +16,8 @@ enum ListColumns {
 	MTIME_STR,
 	PERMS,
 	MTIME,
-	SIZE
+	SIZE,
+	IS_DIR
 };
 
 typedef struct {
@@ -67,16 +68,26 @@ void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 	GtkTreeIter iter;
 	gchar* name;
 	gchar fpath[PATH_MAX];
+	gboolean is_dir;
+
+	Arg arg;
 
 	gtk_tree_model_get_iter(model, &iter, p);
 	gtk_tree_model_get(model, &iter, 
 			NAME_STR, &name,
+			IS_DIR, &is_dir,
 			-1);
 
 	chdir(fw->path);
 	realpath(name, fpath);
 
-	g_print("action(%s)\n", fpath);
+	if (is_dir) {
+		g_print("action dir(%s)\n", fpath);
+		arg.v = (void*)fpath;
+		open_directory(fw, &arg);
+	} else {
+		g_print("action file(%s)\n", fpath);
+	}
 }
 
 /* creates and initializes a FmWindow */
@@ -100,9 +111,9 @@ createwin()
 			GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
 
 	/* setup list store */
-	store = gtk_list_store_new(7, G_TYPE_STRING, G_TYPE_STRING,
+	store = gtk_list_store_new(8, G_TYPE_STRING, G_TYPE_STRING,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,
-			G_TYPE_INT, G_TYPE_INT);
+			G_TYPE_INT, G_TYPE_INT, G_TYPE_BOOLEAN);
 
 	/* setup tree view */
 	fw->tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
@@ -284,6 +295,7 @@ read_files(FmWindow *fw, DIR *dir)
 					PERMS, st.st_mode,
 					MTIME, st.st_mtime,
 					SIZE, st.st_size,
+					IS_DIR, S_ISDIR(st.st_mode),
 					-1);
 		}
 	}

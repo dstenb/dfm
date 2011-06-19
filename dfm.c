@@ -51,6 +51,7 @@ static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
 static void read_files(FmWindow *fw, DIR *dir);
+static void spawn(const gchar *cmd, const gchar *path, gboolean include_path);
 static int valid_filename(const char *s, int show_dot);
 
 static const char* permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
@@ -69,7 +70,6 @@ void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree));
 	GtkTreeIter iter;
 	gchar *name;
-	gchar *buf;
 	gchar fpath[PATH_MAX];
 	gboolean is_dir;
 
@@ -86,9 +86,7 @@ void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 		arg.v = (void*)fpath;
 		open_directory(fw, &arg);
 	} else { /* execute program */
-		buf = g_strdup_printf("%s %s &", filecmd, fpath);
-		system(buf);
-		g_free(buf);
+		spawn(filecmd, fpath, TRUE);
 	}
 }
 
@@ -177,15 +175,10 @@ destroywin(GtkWidget *w, FmWindow *fw)
 void
 dir_exec(FmWindow *fw, const Arg *arg)
 {
-	gchar buf[512];
-
 	if (!fw->path || !arg->v)
 		return;
-	
-	g_snprintf(buf, sizeof(buf), "%s &", (char *)arg->v);
 
-	chdir(fw->path);
-	system(buf);
+	spawn((char *)arg->v, fw->path, FALSE);
 }
 
 /* handles key events on the FmWindow */
@@ -310,6 +303,22 @@ read_files(FmWindow *fw, DIR *dir)
 					-1);
 		}
 	}
+}
+
+/* change working directory and spawns a program to the background */
+void
+spawn(const gchar *cmd, const gchar *path, gboolean include_path) 
+{
+	gchar *buf;
+
+	if (include_path)
+		buf = g_strdup_printf("%s %s &", cmd, path);
+	else
+		buf = g_strdup_printf("%s &", cmd);
+
+	chdir(path);
+	system(buf);
+	g_free(buf);
 }
 
 /* returns 1 if valid filename, i.e. not '.' or '..' (or .* if show_dot = 0) */

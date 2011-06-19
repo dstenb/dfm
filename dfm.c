@@ -173,6 +173,21 @@ destroywin(GtkWidget *w, FmWindow *fw)
 	g_free(fw);
 }
 
+/* change directory to current, and spawns program in background */
+void
+dir_exec(FmWindow *fw, const Arg *arg)
+{
+	gchar buf[512];
+
+	if (!fw->path || !arg->v)
+		return;
+	
+	g_snprintf(buf, sizeof(buf), "%s &", (char *)arg->v);
+
+	chdir(fw->path);
+	system(buf);
+}
+
 /* handles key events on the FmWindow */
 gboolean
 keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw)

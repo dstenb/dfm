@@ -68,27 +68,27 @@ void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree));
 	GtkTreeIter iter;
-	gchar* name;
+	gchar *name;
+	gchar *buf;
 	gchar fpath[PATH_MAX];
 	gboolean is_dir;
 
 	Arg arg;
 
 	gtk_tree_model_get_iter(model, &iter, p);
-	gtk_tree_model_get(model, &iter, 
-			NAME_STR, &name,
-			IS_DIR, &is_dir,
-			-1);
+	gtk_tree_model_get(model, &iter, NAME_STR, &name,
+			IS_DIR, &is_dir, -1);
 
 	chdir(fw->path);
 	realpath(name, fpath);
 
-	if (is_dir) {
-		g_print("action dir(%s)\n", fpath);
+	if (is_dir) { /* open directory */
 		arg.v = (void*)fpath;
 		open_directory(fw, &arg);
-	} else {
-		g_print("action file(%s)\n", fpath);
+	} else { /* execute program */
+		buf = g_strdup_printf("%s %s &", filecmd, fpath);
+		system(buf);
+		g_free(buf);
 	}
 }
 

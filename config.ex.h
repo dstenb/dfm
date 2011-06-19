@@ -1,5 +1,8 @@
 #define MODKEY GDK_CONTROL_MASK
 
+/* Command to be executed when activating a file */ 
+static const char *filecmd = "executor";
+
 static Key keys[] = {
 
 	/* New directory */

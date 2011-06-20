@@ -337,7 +337,7 @@ spawn(const gchar *cmd, const gchar *path, gboolean include_path)
 	gchar *buf;
 
 	if (include_path)
-		buf = g_strdup_printf("%s %s &", cmd, path);
+		buf = g_strdup_printf("%s \"%s\" &", cmd, path);
 	else
 		buf = g_strdup_printf("%s &", cmd);
 

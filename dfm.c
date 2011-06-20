@@ -41,6 +41,7 @@ typedef struct {
 
 /* functions */
 static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
+static gint compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p);
 static gchar *create_perm_str(const mode_t mode);
 static gchar *create_size_str(const size_t size);
 static gchar *create_time_str(const char *fmt, const struct tm *time);
@@ -89,6 +90,20 @@ void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 	}
 }
 
+gint
+compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p)
+{
+	gchar *name[2];
+	gint isdir[2];
+
+	gtk_tree_model_get(m, a, NAME_STR, &name[0], IS_DIR, &isdir[0], -1);
+	gtk_tree_model_get(m, b, NAME_STR, &name[1], IS_DIR, &isdir[1], -1);
+
+	if (isdir[0] == isdir[1])
+		return g_ascii_strcasecmp(name[0], name[1]);
+	return isdir[0] ? -1 : 1;
+}
+
 /* creates a formatted permission string */
 gchar* 
 create_perm_str(const mode_t mode)
@@ -129,6 +144,7 @@ createwin()
 
 	GtkCellRenderer *rend;
 	GtkListStore *store;
+	GtkTreeSortable *sortable;
 
 	fw = g_malloc(sizeof(FmWindow));
 	fw->path = NULL;
@@ -144,6 +160,7 @@ createwin()
 	/* setup list store */
 	store = gtk_list_store_new(5, G_TYPE_STRING, G_TYPE_STRING,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
+	sortable = GTK_TREE_SORTABLE(store);
 
 	/* setup tree view */
 	fw->tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
@@ -166,6 +183,10 @@ createwin()
 	gtk_tree_view_column_set_expand(
 			gtk_tree_view_get_column(GTK_TREE_VIEW(fw->tree), 0), 
 			TRUE); 
+
+	/* setup list sorting */
+	gtk_tree_sortable_set_sort_func(sortable, NAME_STR, compare, NULL, NULL);
+    	gtk_tree_sortable_set_sort_column_id(sortable, NAME_STR, GTK_SORT_ASCENDING);
 
 	/* connect signals */
 	g_signal_connect(G_OBJECT(fw->win), "destroy", 

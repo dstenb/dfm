@@ -44,6 +44,9 @@ typedef struct {
 
 /* functions */
 static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
+static gchar *create_perm_str(const mode_t mode);
+static gchar *create_size_str(const size_t size);
+static gchar *create_time_str(const char *fmt, const struct tm *time);
 static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
 static void dir_exec(FmWindow *fw, const Arg *arg);
@@ -55,7 +58,6 @@ static void spawn(const gchar *cmd, const gchar *path, gboolean include_path);
 static int valid_filename(const char *s, int show_dot);
 
 static const char* permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
-
 
 /* variables */
 static int show_dotfiles = 0;
@@ -88,6 +90,38 @@ void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 	} else { /* execute program */
 		spawn(filecmd, fpath, TRUE);
 	}
+}
+
+/* creates a formatted permission string */
+gchar* 
+create_perm_str(const mode_t mode)
+{
+	return g_strdup_printf("%s%s%s", permstr[(mode >> 6) & 7],
+			permstr[(mode >> 3) & 7],
+			permstr[mode & 7]);
+}
+
+/* creates a formatted size string */
+gchar* 
+create_size_str(const size_t size)
+{
+	if (size < 1024)
+		return g_strdup_printf("%i B", (int)size);
+	else if (size < 1024*1024)
+		return g_strdup_printf("%.1f kB", size/1024.0);
+	else if (size < 1024*1024*1024)
+		return g_strdup_printf("%.1f MB", size/(1024.0*1024));
+	else
+		return g_strdup_printf("%.1f GB", size/(1024.0*1024*1024));
+}
+
+/* creates a formatted time string */
+gchar* 
+create_time_str(const char *fmt, const struct tm *time)
+{
+	gchar buf[64];
+	strftime(buf, sizeof(buf), fmt, time);
+	return g_strdup(buf);
 }
 
 /* creates and initializes a FmWindow */
@@ -207,6 +241,7 @@ newwin(FmWindow *fw, const Arg *arg)
 	windows = g_list_append(windows, new);
 }
 
+/* open and reads directory data to FmWindow */
 void
 open_directory(FmWindow *fw, const Arg *arg)
 {
@@ -248,9 +283,9 @@ read_files(FmWindow *fw, DIR *dir)
 	struct dirent *e;
 	struct stat st;
 	struct tm *time;
-	char mtime_str[20];
-	char perms_str[20];
-	char size_str[20];
+	char *mtime_str;
+	char *perms_str;
+	char *size_str;
 
 	GtkListStore *store = GTK_LIST_STORE(
 			gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree)));
@@ -264,31 +299,10 @@ read_files(FmWindow *fw, DIR *dir)
 		if (valid_filename(e->d_name, fw->show_dot)
 				&& (stat(e->d_name, &st) == 0)) {
 
-			/*** TODO cleanup and split ***/
-
-			/* set time string */
 			time = localtime(&st.st_mtime);
-			strftime(mtime_str, sizeof(mtime_str), "%Y-%m-%d %H:%M:%S", time);
-
-			/* set permission string */
-			snprintf(perms_str, sizeof(perms_str), "%s%s%s",
-					permstr[(st.st_mode >> 6) & 7],
-					permstr[(st.st_mode >> 3) & 7],
-					permstr[st.st_mode & 7]);
-
-			/* set size string */
-			if (st.st_size < 1024) {
-				snprintf(size_str, sizeof(size_str), "%i B", (int)st.st_size);
-			} else if (st.st_size < 1024*1024) {
-				snprintf(size_str, sizeof(size_str), "%.1f kB", 
-						st.st_size / 1024.0);
-			} else if (st.st_size < 1024*1024*1024) {
-				snprintf(size_str, sizeof(size_str), "%.1f MB", 
-						st.st_size / (1024.0*1024));
-			} else {
-				snprintf(size_str, sizeof(size_str), "%.1f GB",
-						st.st_size / (1024.0*1024*1024));
-			}
+			mtime_str = create_time_str("%Y-%m-%d %H:%M:%S", time);
+			perms_str = create_perm_str(st.st_mode);
+			size_str = create_size_str(st.st_size);
 
 			gtk_list_store_append(store, &iter);
 			gtk_list_store_set(store, &iter,
@@ -301,6 +315,10 @@ read_files(FmWindow *fw, DIR *dir)
 					SIZE, st.st_size,
 					IS_DIR, S_ISDIR(st.st_mode),
 					-1);
+
+			g_free(mtime_str);
+			g_free(perms_str);
+			g_free(size_str);
 		}
 	}
 }

@@ -14,9 +14,6 @@ enum ListColumns {
 	PERMS_STR,
 	SIZE_STR,
 	MTIME_STR,
-	PERMS,
-	MTIME,
-	SIZE,
 	IS_DIR
 };
 
@@ -145,9 +142,8 @@ createwin()
 			GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
 
 	/* setup list store */
-	store = gtk_list_store_new(8, G_TYPE_STRING, G_TYPE_STRING,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,
-			G_TYPE_INT, G_TYPE_INT, G_TYPE_BOOLEAN);
+	store = gtk_list_store_new(5, G_TYPE_STRING, G_TYPE_STRING,
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
 
 	/* setup tree view */
 	fw->tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
@@ -316,9 +312,6 @@ read_files(FmWindow *fw, DIR *dir)
 					PERMS_STR, perms_str,
 					SIZE_STR, size_str,
 					MTIME_STR, mtime_str,
-					PERMS, st.st_mode,
-					MTIME, st.st_mtime,
-					SIZE, st.st_size,
 					IS_DIR, S_ISDIR(st.st_mode),
 					-1);
 

@@ -283,9 +283,10 @@ read_files(FmWindow *fw, DIR *dir)
 	struct dirent *e;
 	struct stat st;
 	struct tm *time;
-	char *mtime_str;
-	char *perms_str;
-	char *size_str;
+	gchar *name_str;
+	gchar *mtime_str;
+	gchar *perms_str;
+	gchar *size_str;
 
 	GtkListStore *store = GTK_LIST_STORE(
 			gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree)));
@@ -299,6 +300,11 @@ read_files(FmWindow *fw, DIR *dir)
 		if (valid_filename(e->d_name, fw->show_dot)
 				&& (stat(e->d_name, &st) == 0)) {
 
+			if (S_ISDIR(st.st_mode))
+				name_str = g_strdup_printf("%s/", e->d_name);
+			else
+				name_str = g_strdup(e->d_name);
+
 			time = localtime(&st.st_mtime);
 			mtime_str = create_time_str("%Y-%m-%d %H:%M:%S", time);
 			perms_str = create_perm_str(st.st_mode);
@@ -306,7 +312,7 @@ read_files(FmWindow *fw, DIR *dir)
 
 			gtk_list_store_append(store, &iter);
 			gtk_list_store_set(store, &iter,
-					NAME_STR, e->d_name,
+					NAME_STR, name_str,
 					PERMS_STR, perms_str,
 					SIZE_STR, size_str,
 					MTIME_STR, mtime_str,
@@ -316,6 +322,7 @@ read_files(FmWindow *fw, DIR *dir)
 					IS_DIR, S_ISDIR(st.st_mode),
 					-1);
 
+			g_free(name_str);
 			g_free(mtime_str);
 			g_free(perms_str);
 			g_free(size_str);

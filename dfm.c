@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <dirent.h>
+#include <pthread.h>
 #include <sys/stat.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
@@ -22,7 +23,7 @@ typedef struct {
 	GtkWidget *tree;
 	gchar *path;
 	gboolean show_dot;
-	gint mtime;
+	time_t mtime;
 } FmWindow;
 
 typedef struct {
@@ -47,12 +48,14 @@ static gchar *create_time_str(const char *fmt, const struct tm *time);
 static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
 static void dir_exec(FmWindow *fw, const Arg *arg);
+static time_t get_mtime(const gchar *path);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
 static void path_exec(FmWindow *fw, const Arg *arg);
 static void read_files(FmWindow *fw, DIR *dir);
 static void spawn(const gchar *cmd, const gchar *path, gboolean include_path);
+static void *update_thread(void *v);
 static int valid_filename(const char *s, int show_dot);
 
 static const char *permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
@@ -233,6 +236,14 @@ dir_exec(FmWindow *fw, const Arg *arg)
 	spawn((char *)arg->v, fw->path, FALSE);
 }
 
+time_t
+get_mtime(const char* path)
+{
+	struct stat st;
+
+	return (stat(path, &st) == 0) ? st.st_mtime : 0;
+}
+
 /* handles key events on the FmWindow */
 gboolean
 keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw)
@@ -287,7 +298,7 @@ open_directory(FmWindow *fw, const Arg *arg)
 
 	fw->path = g_strdup(rpath);
 	chdir(fw->path);
-	/* fw->mtime = mtime(fw->path); */
+	fw->mtime = get_mtime(fw->path);
 
 	read_files(fw, dir);
 
@@ -386,6 +397,39 @@ spawn(const gchar *cmd, const gchar *path, gboolean include_path)
 	g_free(buf);
 }
 
+void*
+update_thread(void *v)
+{
+	FmWindow *fw;
+	Arg arg;
+
+	GList *p;
+	gint mtime;
+
+	for (;;) {
+		sleep(3);
+
+		gdk_threads_enter();
+
+		for (p = windows; p != NULL; p = g_list_next(p)) {
+			fw = (FmWindow *)p->data;
+
+			if (fw->path) {
+				mtime = get_mtime(fw->path);
+				if (mtime == -1 || mtime > fw->mtime) {
+					/* directory updated, reload */
+					arg.v = fw->path;
+					open_directory(fw, &arg);
+				}
+			}
+		}
+
+		gdk_threads_leave();
+	}
+
+	return NULL;
+}
+
 /* returns 1 if valid filename, i.e. not '.' or '..' (or .* if show_dot = 0) */
 int
 valid_filename(const char *s, int show_dot)
@@ -399,6 +443,7 @@ int
 main(int argc, char *argv[])
 {
 	Arg arg;
+	pthread_t u_tid;
 	int i;
 
 	/* read arguments */
@@ -414,11 +459,20 @@ main(int argc, char *argv[])
 	}
 	arg.v = i < argc ? argv[i] : ".";
 
+	/* initialize threads */
+	g_thread_init(NULL);
+	gdk_threads_init();
+	gdk_threads_enter();
+
 	gtk_init(&argc, &argv);
 
 	newwin(NULL, &arg);
 
+	/* create update thread */
+	pthread_create(&u_tid, NULL, update_thread, NULL);
+
 	gtk_main();
+	gdk_threads_leave();
 
 	return 0;
 }

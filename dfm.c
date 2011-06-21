@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <string.h>
 #include <errno.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -56,10 +55,10 @@ static void read_files(FmWindow *fw, DIR *dir);
 static void spawn(const gchar *cmd, const gchar *path, gboolean include_path);
 static int valid_filename(const char *s, int show_dot);
 
-static const char* permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
+static const char *permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
 
 /* variables */
-static int show_dotfiles = 0;
+static gboolean show_dotfiles = 0;
 static GList *windows = NULL;
 
 #include "config.h"
@@ -392,7 +391,7 @@ int
 valid_filename(const char *s, int show_dot)
 {
 	return show_dot ? 
-		(strcmp(s, ".") != 0 && strcmp(s, "..") != 0) :
+		(g_strcmp0(s, ".") != 0 && g_strcmp0(s, "..") != 0) :
 		*s != '.';
 }
 
@@ -406,10 +405,10 @@ main(int argc, char *argv[])
 	for(i = 1; i < argc && argv[i][0] == '-'; i++) {
 		switch(argv[i][1]) {
 			case 'd':
-				show_dotfiles = 1;
+				show_dotfiles = TRUE;
 				break;
 			default:
-				g_printerr("Usage: %s [OPTS]... [PATH]\n", argv[0]);
+				g_printerr("Usage: %s [-d] path\n", argv[0]);
 				exit(EXIT_FAILURE);
 		}
 	}

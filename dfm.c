@@ -51,6 +51,7 @@ static void dir_exec(FmWindow *fw, const Arg *arg);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
+static void path_exec(FmWindow *fw, const Arg *arg);
 static void read_files(FmWindow *fw, DIR *dir);
 static void spawn(const gchar *cmd, const gchar *path, gboolean include_path);
 static int valid_filename(const char *s, int show_dot);
@@ -90,6 +91,7 @@ void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 	}
 }
 
+/* compares two rows in the tree model */
 gint
 compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p)
 {
@@ -291,6 +293,31 @@ open_directory(FmWindow *fw, const Arg *arg)
 	read_files(fw, dir);
 
 	closedir(dir);
+}
+
+/* executes program and opens directory with path read from stdin */
+void
+path_exec(FmWindow *fw, const Arg *arg)
+{
+	FILE *fp;
+	gchar *cmd;
+	gchar line[PATH_MAX];
+	Arg a;
+
+	if (fw->path)
+		cmd = g_strdup_printf("echo \"%s\" | %s", fw->path, (gchar *)arg->v);
+	else
+		cmd = g_strdup_printf("%s", (gchar *)arg->v);
+
+	if ((fp = (FILE *)popen(cmd, "r"))) {
+		fgets(line, sizeof(line), fp);
+		a.v = line;
+		open_directory(fw, &a);
+	} else {
+		g_print("%s\n", g_strerror(errno));
+	}
+
+	g_free(cmd);
 }
 
 /* reads files in to fw's list store from an opened DIR struct */

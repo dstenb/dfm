@@ -12,5 +12,8 @@ static Key keys[] = {
 	{ MODKEY, GDK_h, open_directory, { .v = ".." } },
 
 	/* Terminal launch */
-	{ MODKEY, GDK_x, dir_exec, { .v = "urxvt" } }
+	{ MODKEY, GDK_x, dir_exec, { .v = "urxvt" } },
+
+	/* Set path */
+	{ MODKEY, GDK_l, path_exec, { .v = "dmenu" } }
 };

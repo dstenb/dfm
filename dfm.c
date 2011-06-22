@@ -276,6 +276,8 @@ open_directory(FmWindow *fw, const Arg *arg)
 {
 	DIR *dir;
 	char rpath[PATH_MAX];
+	char *p;
+	Arg a;
 
 	if (!arg->v)
 		return;
@@ -288,8 +290,14 @@ open_directory(FmWindow *fw, const Arg *arg)
 	realpath((char*)arg->v, rpath);
 
 	if (!(dir = opendir(rpath))) {
-		/* TODO handle errors */
 		g_warning("%s: %s\n", rpath, g_strerror(errno));
+	
+		if ((p = g_strrstr(rpath, "/"))) {
+			*p = '\0';
+			a.v = rpath;			
+			open_directory(fw, &a);
+		
+		}
 		return;
 	}
 
@@ -416,7 +424,7 @@ update_thread(void *v)
 
 			if (fw->path) {
 				mtime = get_mtime(fw->path);
-				if (mtime == -1 || mtime > fw->mtime) {
+				if (mtime == 0 || mtime > fw->mtime) {
 					/* directory updated, reload */
 					arg.v = fw->path;
 					open_directory(fw, &arg);

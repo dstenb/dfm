@@ -308,6 +308,8 @@ open_directory(FmWindow *fw, const Arg *arg)
 	chdir(fw->path);
 	fw->mtime = get_mtime(fw->path);
 
+	gtk_window_set_title(GTK_WINDOW(fw->win), fw->path);
+
 	read_files(fw, dir);
 
 	closedir(dir);

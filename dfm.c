@@ -51,8 +51,8 @@ typedef struct {
 /* functions */
 static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
 static gint compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p);
-static gchar *create_perm_str(const mode_t mode);
-static gchar *create_size_str(const size_t size);
+static gchar *create_perm_str(mode_t mode);
+static gchar *create_size_str(size_t size);
 static gchar *create_time_str(const char *fmt, const struct tm *time);
 static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
@@ -120,7 +120,7 @@ compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p)
 
 /* creates a formatted permission string */
 gchar* 
-create_perm_str(const mode_t mode)
+create_perm_str(mode_t mode)
 {
 	return g_strdup_printf("%s%s%s", permstr[(mode >> 6) & 7],
 			permstr[(mode >> 3) & 7],
@@ -129,12 +129,12 @@ create_perm_str(const mode_t mode)
 
 /* creates a formatted size string */
 gchar* 
-create_size_str(const size_t size)
+create_size_str(size_t size)
 {
 	if (size < 1024)
 		return g_strdup_printf("%i B", (int)size);
 	else if (size < 1024*1024)
-		return g_strdup_printf("%.1f kB", size/1024.0);
+		return g_strdup_printf("%.1f KB", size/1024.0);
 	else if (size < 1024*1024*1024)
 		return g_strdup_printf("%.1f MB", size/(1024.0*1024));
 	else
@@ -169,7 +169,7 @@ createwin()
 	/* setup scrolled window */
 	fw->scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(fw->scroll),
-			GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
+			GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
 
 	/* setup list store */
 	store = gtk_list_store_new(5, G_TYPE_STRING, G_TYPE_STRING,
@@ -464,9 +464,8 @@ update_thread(void *v)
 {
 	FmWindow *fw;
 	Arg arg;
-
 	GList *p;
-	gint mtime;
+	time_t mtime;
 
 	for (;;) {
 		sleep(3);

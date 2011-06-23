@@ -1,5 +1,8 @@
 #define MODKEY GDK_CONTROL_MASK
 
+/* Time format */
+static const char *timefmt = "%Y-%m-%d %H:%M:%S";
+
 /* Command to be executed when activating a file */ 
 static const char *filecmd = "executor";
 

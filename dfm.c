@@ -271,12 +271,13 @@ keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw)
 	return FALSE;
 }
 
+/* moves cursor in the tree view */
 void
 move_cursor(FmWindow *fw, const Arg *arg)
 {
 	GtkMovementStep m;
 	gint v;
-	gboolean ret = TRUE;
+	gboolean ret;
 
 	switch (arg->i) {
 	case UP:
@@ -342,12 +343,12 @@ open_directory(FmWindow *fw, const Arg *arg)
 
 	if (!(dir = opendir(rpath))) {
 		g_warning("%s: %s\n", rpath, g_strerror(errno));
-	
+
 		if ((p = g_strrstr(rpath, "/"))) {
+			/* try to go up one level and load directory */
 			*p = '\0';
 			a.v = rpath;			
 			open_directory(fw, &a);
-		
 		}
 		return;
 	}
@@ -385,7 +386,7 @@ path_exec(FmWindow *fw, const Arg *arg)
 		a.v = line;
 		open_directory(fw, &a);
 	} else {
-		g_print("%s\n", g_strerror(errno));
+		g_warning("%s\n", g_strerror(errno));
 	}
 
 	g_free(cmd);
@@ -421,7 +422,7 @@ read_files(FmWindow *fw, DIR *dir)
 				name_str = g_strdup(e->d_name);
 
 			time = localtime(&st.st_mtime);
-			mtime_str = create_time_str("%Y-%m-%d %H:%M:%S", time);
+			mtime_str = create_time_str(timefmt, time);
 			perms_str = create_perm_str(st.st_mode);
 			size_str = create_size_str(st.st_size);
 
@@ -514,7 +515,7 @@ main(int argc, char *argv[])
 				show_dotfiles = TRUE;
 				break;
 			default:
-				g_printerr("Usage: %s [-d] path\n", argv[0]);
+				g_printerr("Usage: %s [-d] PATH\n", argv[0]);
 				exit(EXIT_FAILURE);
 		}
 	}

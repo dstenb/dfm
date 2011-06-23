@@ -3,12 +3,6 @@
 /* Command to be executed when activating a file */ 
 static const char *filecmd = "executor";
 
-/* Command to be executed for selecting path */
-static const char *pathcmd = "dmenu -p path";
-
-/* Terminal */
-static const char *termcmd= "urxvt";
-
 static Key keys[] = {
 
 	/* Movement */
@@ -25,8 +19,8 @@ static Key keys[] = {
 	{ 0,                     GDK_BackSpace, open_directory, { .v = ".." } },
 
 	/* Terminal launch */
-	{ MODKEY,                GDK_x,         dir_exec,       { .v = termcmd } },
+	{ MODKEY,                GDK_x,         dir_exec,       { .v = "urxvt" } },
 
 	/* Set path */
-	{ MODKEY,                GDK_l,         path_exec,      { .v = pathcmd } }
+	{ MODKEY,                GDK_l,         path_exec,      { .v = "dmenu -p path" } }
 };

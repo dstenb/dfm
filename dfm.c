@@ -17,6 +17,15 @@ enum ListColumns {
 	IS_DIR
 };
 
+enum Movement {
+	UP,
+	DOWN,
+	HOME,
+	END,
+	PAGEUP,
+	PAGEDOWN
+};
+
 typedef struct {
 	GtkWidget *win;
 	GtkWidget *scroll;
@@ -50,6 +59,7 @@ static void destroywin(GtkWidget *w, FmWindow *fw);
 static void dir_exec(FmWindow *fw, const Arg *arg);
 static time_t get_mtime(const gchar *path);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
+static void move_cursor(FmWindow *fw, const Arg *arg);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
 static void path_exec(FmWindow *fw, const Arg *arg);
@@ -259,6 +269,47 @@ keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw)
 	}
 
 	return FALSE;
+}
+
+void
+move_cursor(FmWindow *fw, const Arg *arg)
+{
+	GtkMovementStep m;
+	gint v;
+	gboolean ret = TRUE;
+
+	switch (arg->i) {
+	case UP:
+		m = GTK_MOVEMENT_DISPLAY_LINES;
+		v = -1;
+		break;
+	case DOWN:
+		m = GTK_MOVEMENT_DISPLAY_LINES;
+		v = 1;
+		break;
+	case HOME:
+		m = GTK_MOVEMENT_BUFFER_ENDS;
+		v = -1;
+		break;
+	case END:
+		m = GTK_MOVEMENT_BUFFER_ENDS;
+		v = 1;
+		break;
+	case PAGEUP:
+		m = GTK_MOVEMENT_PAGES;
+		v = -1;
+		break;
+	case PAGEDOWN:
+		m = GTK_MOVEMENT_PAGES;
+		v = 1;
+		break;
+	default:
+		return;
+	}
+
+	g_signal_emit_by_name(G_OBJECT(fw->tree), "move-cursor", m, v, &ret);
+	/* simple fix for making cursor activated. TODO fix this */
+	g_signal_emit_by_name(G_OBJECT(fw->tree), "toggle-cursor-row", &ret);
 }
 
 /* creates and inserts a new FmWindow to the window list */

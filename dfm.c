@@ -26,6 +26,10 @@ enum Movement {
 	PAGEDOWN
 };
 
+enum Preferences {
+	DOTFILES
+};
+
 typedef struct {
 	GtkWidget *win;
 	GtkWidget *scroll;
@@ -64,14 +68,16 @@ static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
 static void path_exec(FmWindow *fw, const Arg *arg);
 static void read_files(FmWindow *fw, DIR *dir);
+static void reload(FmWindow *fw);
 static void spawn(const gchar *cmd, const gchar *path, gboolean include_path);
+static void toggle_pref(FmWindow *fw, const Arg *arg);
 static void *update_thread(void *v);
 static int valid_filename(const char *s, int show_dot);
 
 static const char *permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
 
 /* variables */
-static gboolean show_dotfiles = 0;
+static gboolean show_dotfiles = FALSE;
 static GList *windows = NULL;
 
 #include "config.h"
@@ -246,6 +252,7 @@ dir_exec(FmWindow *fw, const Arg *arg)
 	spawn((char *)arg->v, fw->path, FALSE);
 }
 
+/* get mtime for a file. returns 0 if unsuccessful */
 time_t
 get_mtime(const char* path)
 {
@@ -443,6 +450,16 @@ read_files(FmWindow *fw, DIR *dir)
 	}
 }
 
+/* reload a FmWindow */
+void
+reload(FmWindow *fw)
+{
+	Arg arg;
+	
+	if ((arg.v = fw->path))
+		open_directory(fw, &arg);
+}
+
 /* change working directory and spawns a program to the background */
 void
 spawn(const gchar *cmd, const gchar *path, gboolean include_path) 
@@ -459,16 +476,27 @@ spawn(const gchar *cmd, const gchar *path, gboolean include_path)
 	g_free(buf);
 }
 
+/* toggle preferences in a FmWindow, and reload if necessary */
+void
+toggle_pref(FmWindow *fw, const Arg *arg)
+{
+	switch (arg->i) {
+		case DOTFILES:
+			fw->show_dot = !fw->show_dot;
+			reload(fw);
+			break;
+	}
+}
+
 void*
 update_thread(void *v)
 {
 	FmWindow *fw;
-	Arg arg;
 	GList *p;
 	time_t mtime;
 
 	for (;;) {
-		sleep(3);
+		sleep(polltime);
 
 		gdk_threads_enter();
 
@@ -478,9 +506,8 @@ update_thread(void *v)
 			if (fw->path) {
 				mtime = get_mtime(fw->path);
 				if (mtime == 0 || mtime > fw->mtime) {
-					/* directory updated, reload */
-					arg.v = fw->path;
-					open_directory(fw, &arg);
+					/* directory updated or removed, reload */
+					reload(fw);
 				}
 			}
 		}

@@ -55,6 +55,7 @@ typedef struct {
 
 /* functions */
 static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
+static void bookmark(FmWindow *fw, const Arg *arg);
 static gchar *cmd_fmt(const char *fmt, const char *path);
 static guint cmd_fmt_len(const char *fmt, const char *path);
 static gint compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p);
@@ -114,6 +115,15 @@ action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 		spawn(cmd, fpath);
 		g_free(cmd);
 	}
+}
+
+/* open a bookmark */
+void
+bookmark(FmWindow *fw, const Arg *arg)
+{
+	Arg a;
+	if (arg->i >= 0 && arg->i < ARRSIZE(bookmarks) && (a.v = bookmarks[arg->i]))
+		open_directory(fw, &a);
 }
 
 /* creates an allocated string with '%p' in fmt replaced with the given path */

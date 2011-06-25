@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <dirent.h>
 #include <pthread.h>
@@ -54,6 +55,8 @@ typedef struct {
 
 /* functions */
 static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
+static gchar *cmd_fmt(const char *fmt, const char *path);
+static guint cmd_fmt_len(const char *fmt, const char *path);
 static gint compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p);
 static gchar *create_perm_str(mode_t mode);
 static gchar *create_size_str(size_t size);
@@ -69,7 +72,7 @@ static void open_directory(FmWindow *fw, const Arg *arg);
 static void path_exec(FmWindow *fw, const Arg *arg);
 static void read_files(FmWindow *fw, DIR *dir);
 static void reload(FmWindow *fw);
-static void spawn(const gchar *cmd, const gchar *path, gboolean include_path);
+static void spawn(const gchar *cmd, const gchar *workd);
 static void toggle_pref(FmWindow *fw, const Arg *arg);
 static void *update_thread(void *v);
 static int valid_filename(const char *s, int show_dot);
@@ -84,11 +87,13 @@ static GList *windows = NULL;
 
 /* enters the selected item if directory, otherwise 
  * executes program with the file as argument */
-void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
+void
+action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree));
 	GtkTreeIter iter;
 	gchar *name;
+	gchar *cmd;
 	gchar fpath[PATH_MAX];
 	gboolean is_dir;
 
@@ -105,10 +110,53 @@ void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 		arg.v = (void*)fpath;
 		open_directory(fw, &arg);
 	} else { /* execute program */
-		spawn(filecmd, fpath, TRUE);
+		cmd = cmd_fmt(filecmd, fpath);
+		spawn(cmd, fpath);
+		g_free(cmd);
 	}
 }
 
+/* creates an allocated string with '%p' in fmt replaced with the given path */
+gchar*
+cmd_fmt(const char *fmt, const char *path)
+{
+	gint len = cmd_fmt_len(fmt, path) + 1;
+	gchar *str = g_malloc(sizeof(gchar)*len);
+	gchar *p = str;
+
+	for ( ; *fmt; fmt++) {
+		if (*fmt == '%') {
+			if (*++fmt == 'p' && path)
+				p = g_stpcpy(p, path);
+			else if (*fmt == '\0')
+				break;
+		} else {
+			*p++ = *fmt;
+		}
+	}
+	*p = '\0';
+	return str;
+}
+
+/* counts size for a given fmt and path string, used by cmd_fmt */
+guint
+cmd_fmt_len(const char *fmt, const char *path)
+{
+	gint len = 0;
+
+	for ( ; *fmt; fmt++) {
+		if (*fmt == '%') {
+			if (*++fmt == 'p' && path)
+				len += strlen(path);
+			else if (*fmt == '\0')
+				break;
+		} else {
+			len++;
+		}
+	}
+
+	return len;
+}
 /* compares two rows in the tree model */
 gint
 compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p)
@@ -246,10 +294,14 @@ destroywin(GtkWidget *w, FmWindow *fw)
 void
 dir_exec(FmWindow *fw, const Arg *arg)
 {
+	gchar *cmd;
+		
 	if (!fw->path || !arg->v)
 		return;
 
-	spawn((char *)arg->v, fw->path, FALSE);
+	cmd = cmd_fmt((char *)arg->v, fw->path);
+	spawn(cmd, fw->path);
+	g_free(cmd);
 }
 
 /* get mtime for a file. returns 0 if unsuccessful */
@@ -383,10 +435,10 @@ path_exec(FmWindow *fw, const Arg *arg)
 	gchar line[PATH_MAX];
 	Arg a;
 
-	if (fw->path)
-		cmd = g_strdup_printf("echo \"%s\" | %s", fw->path, (gchar *)arg->v);
-	else
-		cmd = g_strdup_printf("%s", (gchar *)arg->v);
+	if (!fw->path)
+		return;
+
+	cmd = cmd_fmt((gchar *)arg->v, fw->path);
 
 	if ((fp = (FILE *)popen(cmd, "r"))) {
 		fgets(line, sizeof(line), fp);
@@ -462,18 +514,10 @@ reload(FmWindow *fw)
 
 /* change working directory and spawns a program to the background */
 void
-spawn(const gchar *cmd, const gchar *path, gboolean include_path) 
+spawn(const gchar *cmd, const gchar *workd)
 {
-	gchar *buf;
-
-	if (include_path)
-		buf = g_strdup_printf("%s \"%s\" &", cmd, path);
-	else
-		buf = g_strdup_printf("%s &", cmd);
-
-	chdir(path);
-	system(buf);
-	g_free(buf);
+	chdir(workd);
+	system(cmd);
 }
 
 /* toggle preferences in a FmWindow, and reload if necessary */

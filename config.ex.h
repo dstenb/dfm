@@ -7,7 +7,7 @@ static const char *timefmt = "%Y-%m-%d %H:%M:%S";
 static const int polltime = 1;
 
 /* Command to be executed when activating a file */ 
-static const char *filecmd = "executor";
+static const char *filecmd = "executor \"%p\"";
 
 static Key keys[] = {
 
@@ -27,10 +27,10 @@ static Key keys[] = {
 	{ 0,                     GDK_BackSpace, open_directory, { .v = ".." } },
 
 	/* Terminal launch */
-	{ MODKEY,                GDK_x,         dir_exec,       { .v = "urxvt" } },
+	{ MODKEY,                GDK_x,         dir_exec,       { .v = "urxvt -cd \"%p\"" } },
 
 	/* Set path */
-	{ MODKEY,                GDK_l,         path_exec,      { .v = "dmenu -p path" } },
+	{ MODKEY,                GDK_l,         path_exec,      { .v = "echo \"%p\" | dmenu" } },
 
 	/* Preferences */
 	{ MODKEY|GDK_SHIFT_MASK, GDK_h,         toggle_pref,    { .i = DOTFILES } }

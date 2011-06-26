@@ -65,7 +65,7 @@ static gchar *create_time_str(const char *fmt, const struct tm *time);
 static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
 static void dir_exec(FmWindow *fw, const Arg *arg);
-static time_t get_mtime(const gchar *path);
+static gint get_mtime(const gchar *path, time_t *time);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void move_cursor(FmWindow *fw, const Arg *arg);
 static void newwin(FmWindow *fw, const Arg *arg);
@@ -314,13 +314,19 @@ dir_exec(FmWindow *fw, const Arg *arg)
 	g_free(cmd);
 }
 
-/* get mtime for a file. returns 0 if unsuccessful */
-time_t
-get_mtime(const char* path)
+/* get mtime for a file. returns 0 if ok */
+gint
+get_mtime(const gchar *path, time_t *time)
 {
 	struct stat st;
+	gint err;
 
-	return (stat(path, &st) == 0) ? st.st_mtime : 0;
+	g_return_val_if_fail(time, 0);
+
+	if ((err = stat(path, &st)) == 0)
+		*time = st.st_mtime;
+
+	return err;
 }
 
 /* handles key events on the FmWindow */
@@ -430,7 +436,7 @@ open_directory(FmWindow *fw, const Arg *arg)
 
 	fw->path = g_strdup(rpath);
 	chdir(fw->path);
-	fw->mtime = get_mtime(fw->path);
+	get_mtime(fw->path, &fw->mtime);
 
 	gtk_window_set_title(GTK_WINDOW(fw->win), fw->path);
 
@@ -550,7 +556,7 @@ update_thread(void *v)
 {
 	FmWindow *fw;
 	GList *p;
-	time_t mtime;
+	time_t mtime = 0;
 
 	for (;;) {
 		sleep(polltime);
@@ -561,8 +567,8 @@ update_thread(void *v)
 			fw = (FmWindow *)p->data;
 
 			if (fw->path) {
-				mtime = get_mtime(fw->path);
-				if (mtime == 0 || mtime > fw->mtime) {
+				if (get_mtime(fw->path, &mtime) != 0 
+						|| mtime > fw->mtime) {
 					/* directory updated or removed, reload */
 					reload(fw);
 				}

@@ -1,5 +1,10 @@
 #define MODKEY GDK_CONTROL_MASK
 
+#define OPENDIR "echo \"%p\" | dmenu -p \"%p\""
+
+#define TERMINAL "urxvt -cd \"%p\" &"
+#define MKDIR "echo | mkdir `dmenu -p mkdir`"
+
 /* Bookmarks */
 static const char *bookmarks[] = {
 	"/",
@@ -36,10 +41,13 @@ static Key keys[] = {
 	{ 0,                     GDK_BackSpace, open_directory, { .v = ".." } },
 
 	/* Terminal launch */
-	{ MODKEY,                GDK_x,         dir_exec,       { .v = "urxvt -cd \"%p\" &" } },
+	{ MODKEY,                GDK_x,         dir_exec,       { .v = TERMINAL } },
+
+	/* Mkdir script */
+	{ MODKEY|GDK_SHIFT_MASK, GDK_m,         dir_exec,       { .v = MKDIR } },
 
 	/* Set path */
-	{ MODKEY,                GDK_l,         path_exec,      { .v = "echo \"%p\" | dmenu -p \"%p\"" } },
+	{ MODKEY,                GDK_l,         path_exec,      { .v = OPENDIR } },
 
 	/* Preferences */
 	{ MODKEY|GDK_SHIFT_MASK, GDK_h,         toggle_pref,    { .i = DOTFILES } },

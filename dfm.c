@@ -386,9 +386,13 @@ move_cursor(FmWindow *fw, const Arg *arg)
 void
 newwin(FmWindow *fw, const Arg *arg)
 {
+	Arg a;
+
 	FmWindow *new = createwin();
-	open_directory(new, arg);
 	windows = g_list_append(windows, new);
+
+	a.v = arg->v ? arg->v : (fw ? fw->path : NULL);
+	open_directory(new, &a);
 }
 
 /* open and reads directory data to FmWindow */
@@ -400,8 +404,7 @@ open_directory(FmWindow *fw, const Arg *arg)
 	char *p;
 	Arg a;
 
-	if (!arg->v)
-		return;
+	g_return_if_fail(arg->v);
 
 	/* change to current working directory to get relative paths right */
 	if (fw->path)

@@ -1,9 +1,16 @@
 #define MODKEY GDK_CONTROL_MASK
 
-#define OPENDIR "echo \"%p\" | dmenu -p \"%p\""
+/* Simple shell command macro */
+#define SHCMD(cmd) "/bin/sh -c '" cmd "'"
 
-#define TERMINAL "urxvt -cd \"%p\" &"
-#define MKDIR "echo | mkdir `dmenu -p mkdir`"
+/* Terminal command */
+#define TERMINAL "urxvt"
+
+/* Command for selecting path */
+#define OPENDIR SHCMD("echo \"%p\" | dmenu -p \"%p\"")
+
+/* Simple mkdir script */
+#define MKDIR SHCMD("echo | mkdir `dmenu -p mkdir`")
 
 /* Bookmarks */
 static const char *bookmarks[] = {
@@ -21,7 +28,7 @@ static const char *timefmt = "%Y-%m-%d %H:%M:%S";
 static const int polltime = 1;
 
 /* Command to be executed when activating a file */ 
-static const char *filecmd = "executor \"%p\" &";
+static const char *filecmd = "executor \"%p\"";
 
 static Key keys[] = {
 
@@ -53,14 +60,14 @@ static Key keys[] = {
 	{ MODKEY|GDK_SHIFT_MASK, GDK_h,         toggle_pref,    { .i = DOTFILES } },
 
 	/* Bookmarks */
-	{ MODKEY,                GDK_1,         bookmark,         { .i = 0 } },
-	{ MODKEY,                GDK_2,         bookmark,         { .i = 1 } },
-	{ MODKEY,                GDK_3,         bookmark,         { .i = 2 } },
-	{ MODKEY,                GDK_4,         bookmark,         { .i = 3 } },
-	{ MODKEY,                GDK_5,         bookmark,         { .i = 4 } },
-	{ MODKEY,                GDK_6,         bookmark,         { .i = 5 } },
-	{ MODKEY,                GDK_7,         bookmark,         { .i = 6 } },
-	{ MODKEY,                GDK_8,         bookmark,         { .i = 7 } },
-	{ MODKEY,                GDK_9,         bookmark,         { .i = 8 } },
-	{ MODKEY,                GDK_0,         bookmark,         { .i = 9 } }
+	{ MODKEY,                GDK_1,         bookmark,       { .i = 0 } },
+	{ MODKEY,                GDK_2,         bookmark,       { .i = 1 } },
+	{ MODKEY,                GDK_3,         bookmark,       { .i = 2 } },
+	{ MODKEY,                GDK_4,         bookmark,       { .i = 3 } },
+	{ MODKEY,                GDK_5,         bookmark,       { .i = 4 } },
+	{ MODKEY,                GDK_6,         bookmark,       { .i = 5 } },
+	{ MODKEY,                GDK_7,         bookmark,       { .i = 6 } },
+	{ MODKEY,                GDK_8,         bookmark,       { .i = 7 } },
+	{ MODKEY,                GDK_9,         bookmark,       { .i = 8 } },
+	{ MODKEY,                GDK_0,         bookmark,       { .i = 9 } }
 };

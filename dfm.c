@@ -535,8 +535,13 @@ reload(FmWindow *fw)
 void
 spawn(const gchar *cmd, const gchar *workd)
 {
+	GError *error = NULL;
 	chdir(workd);
-	system(cmd);
+	
+	if (!g_spawn_command_line_async(cmd, &error)) {
+		g_warning("%s", error->message);
+		g_error_free(error);
+	}
 }
 
 /* toggle preferences in a FmWindow, and reload if necessary */

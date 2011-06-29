@@ -408,7 +408,6 @@ open_directory(FmWindow *fw, const Arg *arg)
 {
 	DIR *dir;
 	char rpath[PATH_MAX];
-	char *p;
 	Arg a;
 
 	g_return_if_fail(arg->v);
@@ -614,6 +613,7 @@ main(int argc, char *argv[])
 	Arg arg;
 	pthread_t u_tid;
 	pid_t pid;
+	gboolean silent = FALSE;
 	int i;
 
 	/* read arguments */
@@ -622,8 +622,11 @@ main(int argc, char *argv[])
 			case 'd':
 				show_dotfiles = TRUE;
 				break;
+			case 's':
+				silent = TRUE;
+				break;
 			default:
-				g_printerr("Usage: %s [-d] PATH\n", argv[0]);
+				g_printerr("Usage: %s [-d] [-s] PATH\n", argv[0]);
 				exit(EXIT_FAILURE);
 		}
 	}
@@ -631,6 +634,12 @@ main(int argc, char *argv[])
 	arg.v = i < argc ? argv[i] : ".";
 
 	if ((pid = fork()) == 0) {
+
+		if (silent) {
+			close(STDOUT_FILENO);
+			close(STDERR_FILENO);
+		}
+
 		/* initialize threads */
 		g_thread_init(NULL);
 		gdk_threads_init();

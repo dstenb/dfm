@@ -71,6 +71,7 @@ static void move_cursor(FmWindow *fw, const Arg *arg);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
 static void path_exec(FmWindow *fw, const Arg *arg);
+static gchar *prev_dir(gchar *path);
 static void read_files(FmWindow *fw, DIR *dir);
 static void reload(FmWindow *fw);
 static void spawn(const gchar *cmd, const gchar *workd);
@@ -422,11 +423,10 @@ open_directory(FmWindow *fw, const Arg *arg)
 	if (!(dir = opendir(rpath))) {
 		g_warning("%s: %s\n", rpath, g_strerror(errno));
 
-		if ((p = g_strrstr(rpath, "/"))) {
+		if (strcmp(rpath, "/") != 0) {
 			/* try to go up one level and load directory */
-			*p = '\0';
-			a.v = rpath;			
-			open_directory(fw, &a);
+			a.v = prev_dir(rpath);
+			open_directory(fw, &a);	
 		}
 		return;
 	}
@@ -468,6 +468,19 @@ path_exec(FmWindow *fw, const Arg *arg)
 	}
 
 	g_free(cmd);
+}
+
+gchar*
+prev_dir(gchar *path)
+{
+	gchar *p;
+	if ((p = g_strrstr(path, "/"))) {
+		if (p == path)
+			*(p + 1) = '\0';
+		else
+			*p = '\0';
+	}
+	return path;
 }
 
 /* reads files in to fw's list store from an opened DIR struct */

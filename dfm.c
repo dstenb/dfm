@@ -600,6 +600,7 @@ main(int argc, char *argv[])
 {
 	Arg arg;
 	pthread_t u_tid;
+	pid_t pid;
 	int i;
 
 	/* read arguments */
@@ -613,22 +614,27 @@ main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
+
 	arg.v = i < argc ? argv[i] : ".";
 
-	/* initialize threads */
-	g_thread_init(NULL);
-	gdk_threads_init();
-	gdk_threads_enter();
+	if ((pid = fork()) == 0) {
+		/* initialize threads */
+		g_thread_init(NULL);
+		gdk_threads_init();
+		gdk_threads_enter();
 
-	gtk_init(&argc, &argv);
+		gtk_init(&argc, &argv);
 
-	newwin(NULL, &arg);
+		newwin(NULL, &arg);
 
-	/* create update thread */
-	pthread_create(&u_tid, NULL, update_thread, NULL);
+		/* create update thread */
+		pthread_create(&u_tid, NULL, update_thread, NULL);
 
-	gtk_main();
-	gdk_threads_leave();
+		gtk_main();
+		gdk_threads_leave();
+	} else if (pid < 0) {
+		printf("fork: %s\n", g_strerror(errno));
+	}
 
 	return 0;
 }

@@ -6,9 +6,6 @@
 /* Terminal command */
 #define TERMINAL "urxvt"
 
-/* Command for selecting path */
-#define OPENDIR SHCMD("echo \"%p\" | dmenu -p \"%p\"")
-
 /* Simple mkdir script */
 #define MKDIR SHCMD("echo | mkdir `dmenu -p mkdir`")
 
@@ -54,7 +51,7 @@ static Key keys[] = {
 	{ MODKEY|GDK_SHIFT_MASK, GDK_m,         dir_exec,       { .v = MKDIR } },
 
 	/* Set path */
-	{ MODKEY,                GDK_l,         path_exec,      { .v = OPENDIR } },
+	{ MODKEY,                GDK_l,         set_path,      { 0 } },
 
 	/* Preferences */
 	{ MODKEY|GDK_SHIFT_MASK, GDK_h,         toggle_pref,    { .i = DOTFILES } },

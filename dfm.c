@@ -70,7 +70,7 @@ static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void move_cursor(FmWindow *fw, const Arg *arg);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
-static void path_exec(FmWindow *fw, const Arg *arg);
+static void set_path(FmWindow *fw, const Arg *arg);
 static gchar *prev_dir(gchar *path);
 static void read_files(FmWindow *fw, DIR *dir);
 static void reload(FmWindow *fw);
@@ -446,34 +446,6 @@ open_directory(FmWindow *fw, const Arg *arg)
 	closedir(dir);
 }
 
-/* executes program and opens directory with path read from stdin */
-void
-path_exec(FmWindow *fw, const Arg *arg)
-{
-	FILE *fp;
-	gchar *cmd;
-	gchar *p;
-	gchar line[PATH_MAX];
-	Arg a;
-
-	if (!fw->path)
-		return;
-
-	cmd = cmd_fmt((gchar *)arg->v, fw->path);
-
-	if ((fp = (FILE *)popen(cmd, "r"))) {
-		fgets(line, sizeof(line), fp);
-		if ((p = strchr(line, '\n')))
-			*p = '\0';
-		a.v = line;
-		open_directory(fw, &a);
-	} else {
-		g_warning("%s\n", g_strerror(errno));
-	}
-
-	g_free(cmd);
-}
-
 gchar*
 prev_dir(gchar *path)
 {
@@ -546,6 +518,17 @@ reload(FmWindow *fw)
 	
 	if ((arg.v = fw->path))
 		open_directory(fw, &arg);
+}
+
+void
+set_path(FmWindow *fw, const Arg *arg)
+{
+	Arg a;
+
+	if ((a.v = text_dialog(GTK_WINDOW(fw->win), "set path", fw->path))) {
+		open_directory(fw, &a);
+		g_free(a.v);
+	}
 }
 
 /* change working directory and spawns a program to the background */

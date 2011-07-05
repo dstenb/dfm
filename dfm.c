@@ -75,6 +75,8 @@ static gchar *prev_dir(gchar *path);
 static void read_files(FmWindow *fw, DIR *dir);
 static void reload(FmWindow *fw);
 static void spawn(const gchar *cmd, const gchar *workd);
+static gchar *text_dialog(GtkWindow *p, const gchar *title, const gchar *text);
+static void text_dialog_enter(GtkWidget *w, GtkDialog *dialog);
 static void toggle_pref(FmWindow *fw, const Arg *arg);
 static void *update_thread(void *v);
 static int valid_filename(const char *s, int show_dot);
@@ -557,6 +559,39 @@ spawn(const gchar *cmd, const gchar *workd)
 		g_warning("%s", error->message);
 		g_error_free(error);
 	}
+}
+
+gchar*
+text_dialog(GtkWindow *p, const gchar *title, const gchar *text)
+{
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(title, p, 
+			GTK_DIALOG_MODAL, NULL);
+	GtkWidget *entry = gtk_entry_new();
+	GtkWidget *area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	gchar *str = NULL;
+
+	if (text)
+		gtk_entry_set_text(GTK_ENTRY(entry), text);
+
+	g_signal_connect(G_OBJECT(entry), "activate",
+			G_CALLBACK(text_dialog_enter), dialog);
+
+	gtk_container_add(GTK_CONTAINER(area), entry);
+	gtk_widget_show(entry);
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == 1)
+		str = g_strdup(gtk_entry_get_text(GTK_ENTRY(entry)));
+
+	/* clean up */
+	gtk_widget_destroy(dialog);
+
+	return str;
+}
+
+void
+text_dialog_enter(GtkWidget *w, GtkDialog *dialog)
+{
+	gtk_dialog_response(dialog, 1);
 }
 
 /* toggle preferences in a FmWindow, and reload if necessary */

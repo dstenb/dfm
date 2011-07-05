@@ -450,6 +450,7 @@ path_exec(FmWindow *fw, const Arg *arg)
 {
 	FILE *fp;
 	gchar *cmd;
+	gchar *p;
 	gchar line[PATH_MAX];
 	Arg a;
 
@@ -460,6 +461,8 @@ path_exec(FmWindow *fw, const Arg *arg)
 
 	if ((fp = (FILE *)popen(cmd, "r"))) {
 		fgets(line, sizeof(line), fp);
+		if ((p = strchr(line, '\n')))
+			*p = '\0';
 		a.v = line;
 		open_directory(fw, &a);
 	} else {

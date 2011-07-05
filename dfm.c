@@ -67,6 +67,7 @@ static void destroywin(GtkWidget *w, FmWindow *fw);
 static void dir_exec(FmWindow *fw, const Arg *arg);
 static gint get_mtime(const gchar *path, time_t *time);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
+static void make_dir(FmWindow *fw, const Arg *arg);
 static void move_cursor(FmWindow *fw, const Arg *arg);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const Arg *arg);
@@ -347,6 +348,20 @@ keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw)
 	}
 
 	return FALSE;
+}
+
+void
+make_dir(FmWindow *fw, const Arg *arg)
+{
+	gchar *path;
+
+	g_return_if_fail(fw->path);
+
+	if ((path = text_dialog(GTK_WINDOW(fw->win), "make directory", NULL))) {
+		if (mkdir(path, arg->i) == -1)
+			g_warning("mkdir: %s", strerror(errno));
+		g_free(path);
+	}
 }
 
 /* moves cursor in the tree view */

@@ -6,9 +6,6 @@
 /* Terminal command */
 #define TERMINAL "urxvt"
 
-/* Simple mkdir script */
-#define MKDIR SHCMD("echo | mkdir `dmenu -p mkdir`")
-
 /* Bookmarks */
 static const char *bookmarks[] = {
 	"/",
@@ -48,7 +45,7 @@ static Key keys[] = {
 	{ MODKEY,                GDK_x,         dir_exec,       { .v = TERMINAL } },
 
 	/* Mkdir script */
-	{ MODKEY|GDK_SHIFT_MASK, GDK_m,         dir_exec,       { .v = MKDIR } },
+	{ MODKEY|GDK_SHIFT_MASK, GDK_m,         make_dir,       { .i = 0755 } },
 
 	/* Set path */
 	{ MODKEY,                GDK_l,         set_path,      { 0 } },

@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS = -g -O2 -pthread -Wall -pedantic `pkg-config --cflags --libs gtk+-2.0` -export-dynamic
+CFLAGS = -std=c99 -D_GNU_SOURCE -g -O2 -pthread -Wall -pedantic `pkg-config --cflags --libs gtk+-2.0` -export-dynamic
 
 PREFIX = /usr/local
 
@@ -15,7 +15,6 @@ all: dfm
 $(OBJ): config.h
 
 dfm: ${OBJ}
-	@echo CC -o $@
 	$(CC) $(LDFLAGS) -o $@ $(OBJ) $(CFLAGS)
 
 config:

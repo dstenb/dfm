@@ -1,10 +1,7 @@
 #define MODKEY GDK_CONTROL_MASK
 
-/* Simple shell command macro */
-#define SHCMD(cmd) "/bin/sh -c '" cmd "'"
-
 /* Terminal command */
-#define TERMINAL "urxvt"
+#define TERMINAL { .v = (char *[]){ "urxvt", NULL } }
 
 /* Bookmarks */
 static const char *bookmarks[] = {
@@ -22,7 +19,8 @@ static const char *timefmt = "%Y-%m-%d %H:%M:%S";
 static const int polltime = 1;
 
 /* Command to be executed when activating a file */ 
-static const char *filecmd = "executor \"%p\"";
+static const char *filecmd[] = { "/bin/sh", "-c", 
+	"executor $DFM_PATH", NULL };
 
 static Key keys[] = {
 
@@ -34,7 +32,7 @@ static Key keys[] = {
 	{ MODKEY,                GDK_g,         move_cursor,    { .i = HOME } },
 	{ MODKEY|GDK_SHIFT_MASK, GDK_g,         move_cursor,    { .i = END } },
 
-	/* New directory */
+	/* Spawn new window */
 	{ MODKEY,                GDK_w,         newwin,         { 0 } },
 
 	/* Go up one level */
@@ -42,7 +40,7 @@ static Key keys[] = {
 	{ 0,                     GDK_BackSpace, open_directory, { .v = ".." } },
 
 	/* Terminal launch */
-	{ MODKEY,                GDK_x,         dir_exec,       { .v = TERMINAL } },
+	{ MODKEY,                GDK_x,         dir_exec,       TERMINAL },
 
 	/* Mkdir script */
 	{ MODKEY|GDK_SHIFT_MASK, GDK_m,         make_dir,       { .i = 0755 } },

@@ -56,8 +56,6 @@ typedef struct {
 /* functions */
 static void action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw);
 static void bookmark(FmWindow *fw, const Arg *arg);
-static gchar *cmd_fmt(const char *fmt, const char *path);
-static guint cmd_fmt_len(const char *fmt, const char *path);
 static gint compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p);
 static gchar *create_perm_str(mode_t mode);
 static gchar *create_size_str(size_t size);
@@ -75,7 +73,7 @@ static void set_path(FmWindow *fw, const Arg *arg);
 static gchar *prev_dir(gchar *path);
 static void read_files(FmWindow *fw, DIR *dir);
 static void reload(FmWindow *fw);
-static void spawn(const gchar *cmd, const gchar *workd);
+static void spawn(const gchar * const *argv, const gchar *path);
 static gchar *text_dialog(GtkWindow *p, const gchar *title, const gchar *text);
 static void text_dialog_enter(GtkWidget *w, GtkDialog *dialog);
 static void toggle_pref(FmWindow *fw, const Arg *arg);
@@ -98,7 +96,6 @@ action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree));
 	GtkTreeIter iter;
 	gchar *name;
-	gchar *cmd;
 	gchar fpath[PATH_MAX];
 	gboolean is_dir;
 
@@ -115,9 +112,7 @@ action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 		arg.v = (void*)fpath;
 		open_directory(fw, &arg);
 	} else { /* execute program */
-		cmd = cmd_fmt(filecmd, fpath);
-		spawn(cmd, fpath);
-		g_free(cmd);
+		spawn(filecmd, fpath);
 	}
 }
 
@@ -126,51 +121,11 @@ void
 bookmark(FmWindow *fw, const Arg *arg)
 {
 	Arg a;
-	if (arg->i >= 0 && arg->i < ARRSIZE(bookmarks) && (a.v = bookmarks[arg->i]))
+	if (arg->i >= 0 && arg->i < ARRSIZE(bookmarks) && 
+			(a.v = (gchar*)bookmarks[arg->i]))
 		open_directory(fw, &a);
 }
 
-/* creates an allocated string with '%p' in fmt replaced with the given path */
-gchar*
-cmd_fmt(const char *fmt, const char *path)
-{
-	gint len = cmd_fmt_len(fmt, path) + 1;
-	gchar *str = g_malloc(sizeof(gchar)*len);
-	gchar *p = str;
-
-	for ( ; *fmt; fmt++) {
-		if (*fmt == '%') {
-			if (*++fmt == 'p' && path)
-				p = g_stpcpy(p, path);
-			else if (*fmt == '\0')
-				break;
-		} else {
-			*p++ = *fmt;
-		}
-	}
-	*p = '\0';
-	return str;
-}
-
-/* counts size for a given fmt and path string, used by cmd_fmt */
-guint
-cmd_fmt_len(const char *fmt, const char *path)
-{
-	gint len = 0;
-
-	for ( ; *fmt; fmt++) {
-		if (*fmt == '%') {
-			if (*++fmt == 'p' && path)
-				len += strlen(path);
-			else if (*fmt == '\0')
-				break;
-		} else {
-			len++;
-		}
-	}
-
-	return len;
-}
 /* compares two rows in the tree model */
 gint
 compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p)
@@ -308,14 +263,8 @@ destroywin(GtkWidget *w, FmWindow *fw)
 void
 dir_exec(FmWindow *fw, const Arg *arg)
 {
-	gchar *cmd;
-		
-	if (!fw->path || !arg->v)
-		return;
-
-	cmd = cmd_fmt((char *)arg->v, fw->path);
-	spawn(cmd, fw->path);
-	g_free(cmd);
+	g_return_if_fail(fw->path && arg->v);
+	spawn(arg->v, fw->path);
 }
 
 /* get mtime for a file. returns 0 if ok */
@@ -548,14 +497,13 @@ set_path(FmWindow *fw, const Arg *arg)
 
 /* change working directory and spawns a program to the background */
 void
-spawn(const gchar *cmd, const gchar *workd)
+spawn(const gchar * const *argv, const gchar *path)
 {
-	GError *error = NULL;
-	chdir(workd);
-	
-	if (!g_spawn_command_line_async(cmd, &error)) {
-		g_warning("%s", error->message);
-		g_error_free(error);
+	if (fork() == 0) {
+		g_setenv("DFM_PATH", path, TRUE);
+		chdir(path);
+		execvp(*argv, (gchar **)argv);
+		g_warning("spawn: %s", strerror(errno));
 	}
 }
 

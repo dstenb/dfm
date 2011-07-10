@@ -1,7 +1,7 @@
 #define MODKEY GDK_CONTROL_MASK
 
 /* Terminal command */
-#define TERMINAL { .v = (char *[]){ "urxvt", NULL } }
+#define TERMINAL (char *[]){ "urxvt", NULL }
 
 /* Bookmarks */
 static const char *bookmarks[] = {
@@ -22,6 +22,7 @@ static const int polltime = 1;
 static const char *filecmd[] = { "/bin/sh", "-c", 
 	"executor $DFM_PATH", NULL };
 
+/* Key bindings */
 static Key keys[] = {
 
 	/* Movement */
@@ -40,9 +41,9 @@ static Key keys[] = {
 	{ 0,                     GDK_BackSpace, open_directory, { .v = ".." } },
 
 	/* Terminal launch */
-	{ MODKEY,                GDK_x,         dir_exec,       TERMINAL },
+	{ MODKEY,                GDK_x,         dir_exec,       { .v = TERMINAL } },
 
-	/* Mkdir script */
+	/* Make directory */
 	{ MODKEY|GDK_SHIFT_MASK, GDK_m,         make_dir,       { .i = 0755 } },
 
 	/* Set path */

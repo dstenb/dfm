@@ -1,0 +1,17 @@
+dfm
+===
+simple gtk+ file manager
+
+Configuration
+-------------
+Create configuration file with:
+
+    make config
+
+And edit config.h
+
+Installation
+------------
+Create a configuration file, and then run the following to build and install:
+
+    make clean install

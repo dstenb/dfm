@@ -81,7 +81,9 @@ static void update(FmWindow *fw);
 static void *update_thread(void *v);
 static int valid_filename(const char *s, int show_dot);
 
-static const char *permstr[] = { "---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx" };
+static const char *permstr[] = { 
+	"---", "--x", "-w-", "-wx", 
+	"r--", "r-x", "rw-", "rwx" };
 
 /* variables */
 static gboolean show_dotfiles = FALSE;
@@ -557,6 +559,7 @@ void
 update(FmWindow *fw)
 {
 	time_t mtime = 0;
+
 	if (fw->path) {
 		if (get_mtime(fw->path, &mtime) != 0 || mtime > fw->mtime) {
 			/* directory updated or removed, reload */
@@ -575,9 +578,8 @@ update_thread(void *v)
 
 		gdk_threads_enter();
 
-		for (p = windows; p != NULL; p = g_list_next(p)) {
+		for (p = windows; p != NULL; p = g_list_next(p))
 			update((FmWindow *)p->data);
-		}
 
 		gdk_threads_leave();
 	}

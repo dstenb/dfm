@@ -77,6 +77,7 @@ static void spawn(const gchar * const *argv, const gchar *path);
 static gchar *text_dialog(GtkWindow *p, const gchar *title, const gchar *text);
 static void text_dialog_enter(GtkWidget *w, GtkDialog *dialog);
 static void toggle_pref(FmWindow *fw, const Arg *arg);
+static void update(FmWindow *fw);
 static void *update_thread(void *v);
 static int valid_filename(const char *s, int show_dot);
 
@@ -552,12 +553,22 @@ toggle_pref(FmWindow *fw, const Arg *arg)
 	}
 }
 
+void
+update(FmWindow *fw)
+{
+	time_t mtime = 0;
+	if (fw->path) {
+		if (get_mtime(fw->path, &mtime) != 0 || mtime > fw->mtime) {
+			/* directory updated or removed, reload */
+			reload(fw);
+		}
+	}
+}
+
 void*
 update_thread(void *v)
 {
-	FmWindow *fw;
 	GList *p;
-	time_t mtime = 0;
 
 	for (;;) {
 		sleep(polltime);
@@ -565,15 +576,7 @@ update_thread(void *v)
 		gdk_threads_enter();
 
 		for (p = windows; p != NULL; p = g_list_next(p)) {
-			fw = (FmWindow *)p->data;
-
-			if (fw->path) {
-				if (get_mtime(fw->path, &mtime) != 0 
-						|| mtime > fw->mtime) {
-					/* directory updated or removed, reload */
-					reload(fw);
-				}
-			}
+			update((FmWindow *)p->data);
 		}
 
 		gdk_threads_leave();
@@ -617,30 +620,30 @@ main(int argc, char *argv[])
 
 	arg.v = i < argc ? argv[i] : ".";
 
-	if ((pid = fork()) == 0) {
-
-		if (silent) {
-			close(STDOUT_FILENO);
-			close(STDERR_FILENO);
-		}
-
-		/* initialize threads */
-		g_thread_init(NULL);
-		gdk_threads_init();
-		gdk_threads_enter();
-
-		gtk_init(&argc, &argv);
-
-		newwin(NULL, &arg);
-
-		/* create update thread */
-		pthread_create(&u_tid, NULL, update_thread, NULL);
-
-		gtk_main();
-		gdk_threads_leave();
-	} else if (pid < 0) {
+	if ((pid = fork()) > 0)
+		return EXIT_SUCCESS;
+	else if (pid < 0)
 		printf("fork: %s\n", g_strerror(errno));
+
+	if (silent) {
+		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
 	}
 
-	return 0;
+	/* initialize threads */
+	g_thread_init(NULL);
+	gdk_threads_init();
+	gdk_threads_enter();
+
+	gtk_init(&argc, &argv);
+
+	newwin(NULL, &arg);
+
+	/* create update thread */
+	pthread_create(&u_tid, NULL, update_thread, NULL);
+
+	gtk_main();
+	gdk_threads_leave();
+
+	return EXIT_SUCCESS;
 }

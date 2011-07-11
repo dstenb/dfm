@@ -6,13 +6,13 @@ PREFIX = /usr/local
 SRC = dfm.c
 OBJ = ${SRC:.c=.o}
 
-all: dfm
+all: clean dfm
 
 .c.o:
 	@echo CC $<
 	@${CC} -c ${CFLAGS} $<
 
-$(OBJ): config.h
+$(OBJ): config.h version.h
 
 dfm: ${OBJ}
 	$(CC) $(LDFLAGS) -o $@ $(OBJ) $(CFLAGS)
@@ -23,7 +23,7 @@ config:
 
 clean:
 	@echo cleaning directory
-	@rm -f fm dfm ${OBJ} *.gch
+	@rm -f dfm ${OBJ} *.gch version.h
 
 install: all
 	@echo installing dfm to ${PREFIX}/bin
@@ -34,3 +34,12 @@ install: all
 uninstall:
 	@echo removing dfm from ${PREFIX}/bin
 	@rm -f ${PREFIX}/dfm
+
+version.h:
+	@echo "#ifndef _VERSION_H_" >  version.h
+	@echo "#define _VERSION_H_" >> version.h
+	@echo -n "#define VERSION \"" >> version.h
+	@git show -s --pretty=format:"dfm commit %h (%ai)\"%n" >> version.h
+	@echo "#endif" >> version.h
+
+.PHONY: clean

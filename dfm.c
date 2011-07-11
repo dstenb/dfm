@@ -1,3 +1,21 @@
+/* dfm - Simple GTK+ file manager
+ *
+ * Copyright (c) 2011 David Stenberg
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -6,6 +24,8 @@
 #include <sys/stat.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
+
+#include "version.h"
 
 #define ARRSIZE(x) (sizeof(x) / sizeof(*x))
 #define CLEANMASK(mask) (mask & ~(GDK_MOD2_MASK))
@@ -81,10 +101,6 @@ static void update(FmWindow *fw);
 static void *update_thread(void *v);
 static int valid_filename(const char *s, int show_dot);
 
-static const char *permstr[] = { 
-	"---", "--x", "-w-", "-wx", 
-	"r--", "r-x", "rw-", "rwx" };
-
 /* variables */
 static gboolean show_dotfiles = FALSE;
 static GList *windows = NULL;
@@ -148,6 +164,10 @@ compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p)
 gchar* 
 create_perm_str(mode_t mode)
 {
+	char *permstr[] = { 
+		"---", "--x", "-w-", "-wx", 
+		"r--", "r-x", "rw-", "rwx" };
+
 	return g_strdup_printf("%s%s%s", permstr[(mode >> 6) & 7],
 			permstr[(mode >> 3) & 7],
 			permstr[mode & 7]);
@@ -608,6 +628,9 @@ main(int argc, char *argv[])
 	/* read arguments */
 	for(i = 1; i < argc && argv[i][0] == '-'; i++) {
 		switch(argv[i][1]) {
+			case 'v':
+				g_print("%s\n", VERSION);
+				exit(EXIT_SUCCESS);
 			case 'd':
 				show_dotfiles = TRUE;
 				break;
@@ -615,7 +638,7 @@ main(int argc, char *argv[])
 				silent = TRUE;
 				break;
 			default:
-				g_printerr("Usage: %s [-d] [-s] PATH\n", argv[0]);
+				g_printerr("Usage: %s [-v] [-d] [-s] PATH\n", argv[0]);
 				exit(EXIT_FAILURE);
 		}
 	}

@@ -1,0 +1,28 @@
+#! /bin/bash
+#
+# Simple program executor
+# Directs all output to /dev/null
+
+DEFAULT_PROGRAM="gvim"
+
+function get_mime() {
+	MIME=`file --mime-type "$1" | cut -d ':' -f 2- | cut -b 2-`
+
+	echo $MIME
+}
+
+M=$(get_mime "$1")
+PROGRAM=$DEFAULT_PROGRAM
+
+echo $M
+
+case $M in 
+	"application/ogg" )
+		PROGRAM="mplayer" ;;
+	"application/pdf" )
+		PROGRAM="xpdf" ;;
+	"image/jpeg" )
+		PROGRAM="gpicview" ;;
+esac
+
+$PROGRAM "$1" &> /dev/null

@@ -20,7 +20,7 @@ static const int polltime = 1;
 
 /* Command to be executed when activating a file */ 
 static const char *filecmd[] = { "/bin/sh", "-c", 
-	"executor $DFM_PATH", NULL };
+	"executor \"$DFM_PATH\"", NULL };
 
 /* Key bindings */
 static Key keys[] = {

@@ -88,7 +88,7 @@ static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void make_dir(FmWindow *fw, const Arg *arg);
 static void move_cursor(FmWindow *fw, const Arg *arg);
 static void newwin(FmWindow *fw, const Arg *arg);
-static void open_directory(FmWindow *fw, const Arg *arg);
+static void open_directory(FmWindow *fw, const char *str);
 static void set_path(FmWindow *fw, const Arg *arg);
 static gchar *prev_dir(gchar *path);
 static void read_files(FmWindow *fw, DIR *dir);
@@ -118,8 +118,6 @@ action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 	gchar fpath[PATH_MAX];
 	gboolean is_dir;
 
-	Arg arg;
-
 	gtk_tree_model_get_iter(model, &iter, p);
 	gtk_tree_model_get(model, &iter, NAME_STR, &name,
 			IS_DIR, &is_dir, -1);
@@ -128,8 +126,7 @@ action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 	realpath(name, fpath);
 
 	if (is_dir) { /* open directory */
-		arg.v = (void*)fpath;
-		open_directory(fw, &arg);
+		open_directory(fw, fpath);
 	} else { /* execute program */
 		spawn(filecmd, fpath);
 	}
@@ -139,10 +136,8 @@ action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 void
 bookmark(FmWindow *fw, const Arg *arg)
 {
-	Arg a;
-	if (arg->i >= 0 && arg->i < ARRSIZE(bookmarks) && 
-			(a.v = (gchar*)bookmarks[arg->i]))
-		open_directory(fw, &a);
+	if (arg->i >= 0 && arg->i < ARRSIZE(bookmarks))
+		open_directory(fw, (char *)bookmarks[arg->i]);
 }
 
 /* compares two rows in the tree model */
@@ -382,39 +377,34 @@ move_cursor(FmWindow *fw, const Arg *arg)
 void
 newwin(FmWindow *fw, const Arg *arg)
 {
-	Arg a;
-
 	FmWindow *new = createwin();
 	windows = g_list_append(windows, new);
 
-	a.v = arg->v ? arg->v : (fw ? fw->path : NULL);
-	open_directory(new, &a);
+	open_directory(new, arg->v ? arg->v : (fw ? fw->path : NULL));
 }
 
 /* open and reads directory data to FmWindow */
 void
-open_directory(FmWindow *fw, const Arg *arg)
+open_directory(FmWindow *fw, const char *str)
 {
 	DIR *dir;
 	char rpath[PATH_MAX];
-	Arg a;
 
-	g_return_if_fail(arg->v);
+	g_return_if_fail(str);
 
 	/* change to current working directory to get relative paths right */
 	if (fw->path)
 		chdir(fw->path);
 
 	/* get clean absolute path string */
-	realpath((char*)arg->v, rpath);
+	realpath(str, rpath);
 
 	if (!(dir = opendir(rpath))) {
 		g_warning("%s: %s\n", rpath, g_strerror(errno));
 
 		if (strcmp(rpath, "/") != 0) {
 			/* try to go up one level and load directory */
-			a.v = prev_dir(rpath);
-			open_directory(fw, &a);	
+			open_directory(fw, prev_dir(rpath));	
 		}
 		return;
 	}
@@ -501,20 +491,19 @@ read_files(FmWindow *fw, DIR *dir)
 void
 reload(FmWindow *fw)
 {
-	Arg arg;
-	
-	if ((arg.v = fw->path))
-		open_directory(fw, &arg);
+	open_directory(fw, fw->path);
 }
 
 void
 set_path(FmWindow *fw, const Arg *arg)
 {
-	Arg a;
+	char *path;
 
-	if ((a.v = text_dialog(GTK_WINDOW(fw->win), "set path", fw->path))) {
-		open_directory(fw, &a);
-		g_free(a.v);
+	if ((path = arg->v)) {
+		open_directory(fw, path);
+	} else if ((path = text_dialog(GTK_WINDOW(fw->win), "path", fw->path))) {
+		open_directory(fw, path);
+		g_free(path);
 	}
 }
 

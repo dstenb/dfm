@@ -37,8 +37,8 @@ static Key keys[] = {
 	{ MODKEY,                GDK_w,         newwin,         { 0 } },
 
 	/* Go up one level */
-	{ MODKEY,                GDK_h,         open_directory, { .v = ".." } },
-	{ 0,                     GDK_BackSpace, open_directory, { .v = ".." } },
+	{ MODKEY,                GDK_h,         set_path,       { .v = ".." } },
+	{ 0,                     GDK_BackSpace, set_path,       { .v = ".." } },
 
 	/* Terminal launch */
 	{ MODKEY,                GDK_x,         dir_exec,       { .v = TERMINAL } },

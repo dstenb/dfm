@@ -220,6 +220,11 @@ createwin()
 	/* setup tree view */
 	fw->tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(fw->tree), TRUE);
+	gtk_tree_view_set_rubber_banding(GTK_TREE_VIEW(fw->tree), TRUE);
+	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(fw->tree), TRUE);
+	gtk_tree_selection_set_mode(
+			gtk_tree_view_get_selection(GTK_TREE_VIEW(fw->tree)),
+			GTK_SELECTION_MULTIPLE);
 
 	rend = gtk_cell_renderer_text_new();
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(fw->tree),
@@ -335,6 +340,8 @@ make_dir(FmWindow *fw, const Arg *arg)
 void
 move_cursor(FmWindow *fw, const Arg *arg)
 {
+	/* TODO: fix this */
+
 	GtkMovementStep m;
 	gint v;
 	gboolean ret;
@@ -369,8 +376,6 @@ move_cursor(FmWindow *fw, const Arg *arg)
 	}
 
 	g_signal_emit_by_name(G_OBJECT(fw->tree), "move-cursor", m, v, &ret);
-	/* simple fix for making cursor activated. TODO fix this */
-	g_signal_emit_by_name(G_OBJECT(fw->tree), "toggle-cursor-row", &ret);
 }
 
 /* creates and inserts a new FmWindow to the window list */

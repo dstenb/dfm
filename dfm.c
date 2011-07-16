@@ -84,9 +84,11 @@ static FmWindow *createwin();
 static void destroywin(GtkWidget *w, FmWindow *fw);
 static void dir_exec(FmWindow *fw, const Arg *arg);
 static gint get_mtime(const gchar *path, time_t *time);
+static GList *get_selected(FmWindow *fw);
 static gboolean keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw);
 static void make_dir(FmWindow *fw, const Arg *arg);
 static void move_cursor(FmWindow *fw, const Arg *arg);
+static void mv(FmWindow *fw, const Arg *arg);
 static void newwin(FmWindow *fw, const Arg *arg);
 static void open_directory(FmWindow *fw, const char *str);
 static void set_path(FmWindow *fw, const Arg *arg);
@@ -305,6 +307,32 @@ get_mtime(const gchar *path, time_t *time)
 	return err;
 }
 
+/* returns a list of name for selected files (relative file names, not absolute) */
+GList *
+get_selected(FmWindow *fw)
+{
+	GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(fw->tree));
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	GList *lsel = gtk_tree_selection_get_selected_rows(sel, &model);
+	GList *node = lsel;
+	GList *files = NULL;
+	gchar *name;
+
+	while (node) {
+		gtk_tree_model_get_iter(model, &iter, node->data);
+		gtk_tree_model_get(model, &iter, NAME_STR, &name, -1);
+		files = g_list_append(files, name);
+
+		node = g_list_next(node);
+	}
+
+	g_list_foreach(lsel, (GFunc) gtk_tree_path_free, NULL);
+	g_list_free(lsel);
+
+	return files;
+}
+
 /* handles key events on the FmWindow */
 gboolean
 keypress(GtkWidget *w, GdkEventKey *ev, FmWindow *fw)
@@ -376,6 +404,23 @@ move_cursor(FmWindow *fw, const Arg *arg)
 	}
 
 	g_signal_emit_by_name(G_OBJECT(fw->tree), "move-cursor", m, v, &ret);
+}
+
+void
+mv(FmWindow *fw, const Arg *arg)
+{
+	/* TODO: dummy atm */
+
+	GList *files = get_selected(fw);
+	GList *iter = files;
+
+	while (iter) {
+		printf("f: '%s'\n", (char *)iter->data);
+		iter = g_list_next(iter);
+	}
+
+	g_list_foreach(files, (GFunc) g_free, NULL);
+	g_list_free(files);
 }
 
 /* creates and inserts a new FmWindow to the window list */

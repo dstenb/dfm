@@ -46,6 +46,8 @@ static Key keys[] = {
 	/* Make directory */
 	{ MODKEY|GDK_SHIFT_MASK, GDK_m,         make_dir,       { .i = 0755 } },
 
+	{ MODKEY,                GDK_m,         mv,             { 0 } },
+
 	/* Set path */
 	{ MODKEY,                GDK_l,         set_path,      { 0 } },
 

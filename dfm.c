@@ -126,6 +126,7 @@ action(GtkWidget *w, GtkTreePath *p, GtkTreeViewColumn *c, FmWindow *fw)
 
 	chdir(fw->path);
 	realpath(name, fpath);
+	g_free(name);
 
 	if (is_dir) { /* open directory */
 		open_directory(fw, fpath);
@@ -148,13 +149,19 @@ compare(GtkTreeModel *m, GtkTreeIter *a, GtkTreeIter *b, gpointer p)
 {
 	gchar *name[2];
 	gint isdir[2];
+	gint ret;
 
 	gtk_tree_model_get(m, a, NAME_STR, &name[0], IS_DIR, &isdir[0], -1);
 	gtk_tree_model_get(m, b, NAME_STR, &name[1], IS_DIR, &isdir[1], -1);
 
 	if (isdir[0] == isdir[1])
-		return g_ascii_strcasecmp(name[0], name[1]);
-	return isdir[0] ? -1 : 1;
+		ret = g_ascii_strcasecmp(name[0], name[1]);
+	else 
+		ret = isdir[0] ? -1 : 1;
+
+	g_free(name[0]);
+	g_free(name[1]);
+	return ret;
 }
 
 /* creates a formatted permission string */

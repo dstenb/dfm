@@ -215,6 +215,7 @@ createwin()
 	fw->show_dot = show_dotfiles;
 	fw->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_default_size(GTK_WINDOW(fw->win), 640, 480);
+	gtk_window_set_icon_name(GTK_WINDOW(fw->win), "folder");
 
 	/* setup scrolled window */
 	fw->scroll = gtk_scrolled_window_new(NULL, NULL);

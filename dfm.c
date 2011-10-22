@@ -256,7 +256,7 @@ createwin()
 
 	/* setup list sorting */
 	gtk_tree_sortable_set_sort_func(sortable, NAME_STR, compare, NULL, NULL);
-    	gtk_tree_sortable_set_sort_column_id(sortable, NAME_STR, GTK_SORT_ASCENDING);
+	gtk_tree_sortable_set_sort_column_id(sortable, NAME_STR, GTK_SORT_ASCENDING);
 
 	/* connect signals */
 	g_signal_connect(G_OBJECT(fw->win), "destroy", 
@@ -509,9 +509,15 @@ read_files(FmWindow *fw, DIR *dir)
 	GtkListStore *store = GTK_LIST_STORE(
 			gtk_tree_view_get_model(GTK_TREE_VIEW(fw->tree)));
 	GtkTreeIter iter;
+	GtkTreeSortable *sortable = GTK_TREE_SORTABLE(store);
 
 	/* remove previous entries */
 	gtk_list_store_clear(store);
+
+	/* disable sort to speed up insertion */
+	gtk_tree_sortable_set_sort_column_id(sortable,
+			GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID,
+			GTK_SORT_ASCENDING);
 
 	while ((e = readdir(dir))) {
 
@@ -543,6 +549,9 @@ read_files(FmWindow *fw, DIR *dir)
 			g_free(size_str);
 		}
 	}
+
+	/* reenable sort */
+	gtk_tree_sortable_set_sort_column_id(sortable, NAME_STR, GTK_SORT_ASCENDING);
 }
 
 /* reload a FmWindow */
